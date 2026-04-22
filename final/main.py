@@ -29,10 +29,17 @@ class Solver:
             key=lambda vertex_id: len(self.graph[vertex_id]), 
             reverse=True
         )
-        self.best = self.num_stars # TODO: optimize here by using a greedy algorithm to find a better than worst case
+        self.best = self.Greedy() # TODO: optimize here by using a greedy algorithm to find a better than worst case
 
+    # this could just be a one time dfs with the ordered vertices
     def Greedy(self):
-        pass
+        best = self.num_stars
+        greedy_state = ProblemState(set())
+        for vertice in self.ordered_vertices:
+            self.IncludeSystem(greedy_state, vertice)
+            if self.TestValid(greedy_state):
+                best = len(greedy_state.include_set)
+                return best
 
     def TestValid(self, state: ProblemState):
         for system_id in range(self.num_stars):
@@ -111,10 +118,9 @@ jojo@jojo-mac final % time python3 main.py < test_3_random.txt
 11
 python3 main.py < test_3_random.txt  0.88s user 0.02s system 98% cpu 0.912 total
 
-NOTES:
-Starting off by thinkning about optimizing how we define worst case, we could do a greedy to find a better than worst case and start there to weed out
-My first optimization attempt is by using backtracking instead of doing a copy each time. I removed next_id from the class
-and I just pass current_id into branch, this way I dont need to book keep the id 
-
+greedy pre-process optimization:
+jojo@jojo-mac final % time python3 main.py < test_3_random.txt
+11
+python3 main.py < test_3_random.txt  0.88s user 0.01s system 99% cpu 0.902 total
 
 """
