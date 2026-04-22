@@ -18,12 +18,17 @@ class Solver:
     def Load(self):
         self.num_stars, self.num_connections = map(int, input().split(" "))
         self.graph = {vertex_id: set() for vertex_id in range(self.num_stars)}
-        # TODO: we can optimize by ordering them by number of connections in descending order
         for _ in range(self.num_connections):
             a, b = map(int, input().split(" "))
             # Add edge between a <---> b
             self.graph[a].add(b)
             self.graph[b].add(a)
+
+        self.ordered_vertices = sorted(
+            self.graph.keys(), 
+            key=lambda vertex_id: len(self.graph[vertex_id]), 
+            reverse=True
+        )
         self.best = self.num_stars # TODO: optimize here by using a greedy algorithm to find a better than worst case
 
     def Greedy(self):
@@ -50,44 +55,36 @@ class Solver:
     def Solve(self):
         # Build initial problem state
         initial_state = ProblemState(set())
-
-        cur_system = 0
-
-        # Try including the current system under consideration
-        # TODO: this is where we would pass in the greedy output, we should wrap this in an if statement
-        # if the count is equal to or greater than self.best, we can stop
-        # we don't need to check if its a valid solution because we already know a better one exists
-        self.IncludeSystem(initial_state, cur_system)
-        self.Branch(initial_state, cur_system + 1)
-        self.RemoveFromSystem(initial_state, cur_system)
-        
-        # Try excluding the current system under consideration
-        self.Branch(initial_state, cur_system + 1)
-
+        self.Branch(initial_state, 0)
         return self.best
+
 
     def Branch(self, state: ProblemState, current_id: int):
         # Current count of systems with stations
         num_stations = len(state.include_set)
-        # Is this a valid solution?
+        # if the current number of stations is already larger than or equal to best - 1 there is no need to search as we 
+        # will not find a better solution
+        if num_stations >= self.best - 1:
+            return
+
         valid_sol = self.TestValid(state)
         # If so, if better than best, update best and bail out of this branch.
         if (valid_sol and num_stations < self.best):
+            # print(f"num stations {num_stations}")
             self.best = num_stations
             return
         # Not a solution. If next_id is not valid, return.
         if (current_id >= self.num_stars):
             return
         # If we're here, next_id is valid and we don't yet have a solution on this branch.
-        cur_system = current_id
+        cur_system = self.ordered_vertices[current_id]
 
-        # Try including the current system under consideration
         self.IncludeSystem(state, cur_system)
-        self.Branch(state, cur_system + 1)
+        self.Branch(state, current_id + 1)
         self.RemoveFromSystem(state, cur_system)
 
         # Try excluding the current system under consideration
-        self.Branch(state, cur_system + 1)
+        self.Branch(state, current_id + 1)
 
 
 if __name__ == "__main__":
@@ -109,7 +106,10 @@ jojo@jojo-mac final % time python3 main.py < test_3_random.txt
 11
 python3 main.py < test_3_random.txt  2.38s user 0.02s system 99% cpu 2.410 total
 
-greedy pre-process optimization:
+bounding optimizations:
+jojo@jojo-mac final % time python3 main.py < test_3_random.txt
+11
+python3 main.py < test_3_random.txt  0.88s user 0.02s system 98% cpu 0.912 total
 
 NOTES:
 Starting off by thinkning about optimizing how we define worst case, we could do a greedy to find a better than worst case and start there to weed out
